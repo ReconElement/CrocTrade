@@ -1,0 +1,26 @@
+{
+  "name": "pub_sub",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "npx tsc && node ./dist/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@types/kafkajs": "^1.8.2",
+    "@types/redis": "^4.0.10",
+    "@types/ws": "^8.18.1",
+    "kafkajs": "^2.2.4",
+    "rabbitmq-client": "^5.0.5",
+    "redis": "^5.8.2",
+    "ws": "^8.18.3"
+  }
+}
