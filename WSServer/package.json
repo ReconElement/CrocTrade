@@ -15,8 +15,10 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
+    "@types/events": "^3.0.3",
     "@types/redis": "^4.0.10",
     "@types/ws": "^8.18.1",
+    "events": "^3.3.0",
     "redis": "^5.8.2",
     "ws": "^8.18.3"
   }

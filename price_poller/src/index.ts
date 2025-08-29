@@ -291,6 +291,74 @@
 // }
 // main();
 
+// const sendDataPubSubRedis = async ()=>{
+//     // const publisher = Redis.createClient();
+//     // const connection = await publisher.connect();
+//     // if(connection){
+//     //     await publisher.publish('stream',JSON.stringify({"name":"Omkar"}));
+//     // }
+//     const publisher = Redis.createClient();
+//     const connection = await publisher.connect();
+//     if(connection){
+//         // streamBTCUSDT.on('message',async (data)=>{
+//         //     await publisher.publish('stream',JSON.stringify("Hello"));
+//         // });
+//         // streamETHUSDT.on('message',async (data)=>{
+//         //     await publisher.publish('stream', JSON.stringify("Hello"));
+//         // });
+//         // streamSOLUSDT.on('message',async (data)=>{
+//         //     await publisher.publish('stream',JSON.stringify("Hello"));
+//         // });
+//     //     const dataStream: WebSocket.RawData[] = [];
+//     //     streamBTCUSDT.on('message',async (data)=>{
+//     //         dataStream.push(data);
+//     //         streamETHUSDT.on('message',async (data)=>{
+//     //             dataStream.push(data);
+//     //             streamSOLUSDT.on('message', async (data)=>{
+//     //                 dataStream.push(data);
+//     //                 await publisher.publish('stream', JSON.stringify(dataStream.toString()))
+//     //             })
+//     //         })
+//     //     })
+//     // };
+//     streamBTCUSDT.on('message',async (data)=>{
+//         await publisher.publish('stream',JSON.stringify(data.toString()));
+//     })
+//     streamETHUSDT.on('message',async (data)=>{
+//         await publisher.publish('stream', JSON.stringify(data.toString()));
+//     })
+//     streamSOLUSDT.on('message',async (data)=>{
+//         await publisher.publish('stream', JSON.stringify(data.toString()));
+//     });
+// }
+// }
+// await sendDataPubSubRedis();
+//The publisher part of the websocket apparently resides inside the price-poller it is not a seperate component 
+// streamSOLUSDT.on('message',(data1)=>{
+//     // console.log(JSON.parse(data.toString()));
+//     streamETHUSDT.on('message',(data2)=>{
+//         streamBTCUSDT.on('message',(data3)=>{
+//             const object = {
+//                 price_updates: [{
+//                     symbol: "BTC",
+//                     buyPrice: JSON.parse(data3.toString()).b,
+//                     sellPrice: JSON.parse(data3.toString()).a,
+//                     decimals: 8
+//                 },{
+//                     symbol: "SOL",
+//                     buyPrice: JSON.parse(data1.toString()).b,
+//                     sellPrice: JSON.parse(data1.toString()).a,
+//                     decimals: 8
+//                 },{
+//                     symbol: "ETH",
+//                     buyPrice: JSON.parse(data2.toString()).b,
+//                     sellPrice: JSON.parse(data2.toString()).a,
+//                     decimals: 8
+//                 }]
+//             }
+//         })
+//     });
+// });
 import Queue from "bull";
 import WebSocket, {WebSocketServer} from "ws";
 import Redis from 'redis';
@@ -334,25 +402,191 @@ const sendDataQueueRedis = async ()=>{
         dataQueue.add(data);
     });
 };
+
+function throttle(func: ()=>{}, timeFrame: number){
+    var lastTime = 0;
+    return function(){
+        var now = Date.now();
+        if(now-lastTime>=timeFrame){
+            func();
+            lastTime = now;
+        }
+    }
+}
 const sendDataPubSubRedis = async ()=>{
-    // const publisher = Redis.createClient();
-    // const connection = await publisher.connect();
-    // if(connection){
-    //     await publisher.publish('stream',JSON.stringify({"name":"Omkar"}));
-    // }
     const publisher = Redis.createClient();
     const connection = await publisher.connect();
     if(connection){
-        streamBTCUSDT.on('message',async (data)=>{
-            await publisher.publish('stream',JSON.stringify(data.toString()));
-        });
-        streamETHUSDT.on('message',async (data)=>{
-            await publisher.publish('stream', JSON.stringify(data.toString()));
-        });
-        streamSOLUSDT.on('message',async (data)=>{
-            await publisher.publish('stream',JSON.stringify(data.toString()));
-        });
-    };
+        streamBTCUSDT.on('message',async (data1)=>{
+            streamSOLUSDT.on('message', async (data2)=>{
+                streamETHUSDT.on('message', async (data3)=>{
+                    const obj = {
+                        price_updates: [{
+                            symbol: "BTC",
+                            buyPrice: JSON.parse(data1.toString()).b,
+                            sellPrice: JSON.parse(data1.toString()).a,
+                            decimals: 8
+                        },{
+                            symbol: "SOL",
+                            buyPrice: JSON.parse(data2.toString()).b,
+                            sellPrice: JSON.parse(data2.toString()).a,
+                            decimals: 8
+                        },{
+                            symbol: "ETH",
+                            buyPrice: JSON.parse(data3.toString()).b,
+                            sellPrice: JSON.parse(data3.toString()).a,
+                            decimals: 8
+                        }]
+                    };
+                    // streamBTCUSDT.removeAllListeners();
+                    // streamETHUSDT.removeAllListeners();
+                    // streamSOLUSDT.removeAllListeners();
+                    await publisher.publish('stream',JSON.stringify(obj));
+                })
+            })
+        })
+    }
+    // if(connection){
+    //     const obj = {
+    //         price_updates: [{}],
+    //     }
+        // streamBTCUSDT.on('message',async (data)=>{
+        //     obj.price_updates.push({
+        //         symbol: "BTC",
+        //         buyPrice: JSON.parse(data.toString()).b,
+        //         sellPrice: JSON.parse(data.toString()).a,
+        //         decimals: 8
+        //     });
+        // });
+    //     streamSOLUSDT.on('message',async (data)=>{
+    //         obj.price_updates.push({
+    //             symbol: "SOL",
+    //             buyPrice: JSON.parse(data.toString()).b,
+    //             sellPrice: JSON.parse(data.toString()).a,
+    //             decimals: 8
+    //         });
+    //     });
+    //     streamETHUSDT.on('message',async (data)=>{
+    //         obj.price_updates.push({
+    //             symbol: "ETH",
+    //             buyPrice: JSON.parse(data.toString()).b,
+    //             sellPrice: JSON.parse(data.toString()).a,
+    //             decimals: 8
+    //         });
+    //     });
+
+    //     await publisher.publish('stream',JSON.stringify(obj));
+    // }
+};
+
+const sendDataPubSubRedisWithThrottle = async ()=>{
+    const publisher = Redis.createClient();
+    const connection = await publisher.connect();
+    let dataContent: string[] = []
+    // if(connection){
+    //     setInterval(()=>{
+    //         streamBTCUSDT.on('message', async (data)=>{
+    //             dataContent.push(data.toString());
+    //             if(dataContent.length>10){
+    //                 await publisher.publish('stream',JSON.stringify(dataContent));
+    //                 streamBTCUSDT.on('close',()=>{})
+    //             }
+    //         }
+    //     )
+    //     dataContent.forEach((value)=>console.log(value));
+    //     dataContent = [];
+    //     },2000)
+    // }
+    // while(connection){
+    //     streamBTCUSDT.on('message',async (data)=>{
+    //         dataContent.push(data.toString());
+    //         if(dataContent.length>10){
+    //             await publisher.publish('stream',JSON.stringify(dataContent));
+    //             streamBTCUSDT.on('close',()=>{});
+    //         }
+    //     })
+    // }
+    // if(connection){
+    //     console.log("Reached 1");
+    //     while(connection){
+    //         // console.log("Reached 2");
+    //         streamBTCUSDT.on('message',async (data)=>{
+    //             console.log("Reached 3")
+    //             dataContent.push(data.toString());
+    //             if(dataContent.length>0){
+    //                 console.log("It has something")
+    //             }
+    //             if(dataContent.length>10){
+                  
+    //                 // await publisher.publish('stream',JSON.stringify(dataContent));
+    //                 streamBTCUSDT.on('close',()=>{
+    //                     dataContent.forEach((value)=>console.log(value.toString()));
+    //                     // dataContent = [];
+    //                 });
+    //             }
+    //         })
+    //         streamBTCUSDT.close();
+    //     }
+    //     dataContent = [];
+    // }
+    // if(connection){
+    //     const dataList: WebSocket.RawData[] = [];
+    //     streamBTCUSDT.on('message',async (data)=>{
+    //         dataList.push(data);
+    //         if(dataList.length>10){
+    //             await publisher.publish('stream',JSON.stringify(dataContent));
+    //             streamBTCUSDT.close();
+    //         }
+    //     });
+    // }
+    // if(connection){
+    //     streamBTCUSDT.on('message',async (data)=>{
+    //         try{
+    //             await publisher.publish('stream',JSON.stringify(data));
+    //         }
+    //         catch(e){
+    //             console.log(e);
+    //         }
+    //     });
+    // }
 }
-await sendDataPubSubRedis();
-//The publisher part of the websocket apparently resides inside the price-poller it is not a seperate component 
+
+// await sendDataPubSubRedis();
+
+async function sendDataPubSubRedisWebSocketInsidePublish(){
+    const publisher = Redis.createClient();
+    const connection = await publisher.connect();
+    if(connection){
+        // await publisher.publish('stream','hello world');
+         streamBTCUSDT.on('message',async (data1)=>{
+            streamSOLUSDT.on('message', async (data2)=>{
+                streamETHUSDT.on('message', async (data3)=>{
+                    const obj = {
+                        price_updates: [{
+                            symbol: "BTC",
+                            buyPrice: JSON.parse(data1.toString()).b,
+                            sellPrice: JSON.parse(data1.toString()).a,
+                            decimals: 8
+                        },{
+                            symbol: "SOL",
+                            buyPrice: JSON.parse(data2.toString()).b,
+                            sellPrice: JSON.parse(data2.toString()).a,
+                            decimals: 8
+                        },{
+                            symbol: "ETH",
+                            buyPrice: JSON.parse(data3.toString()).b,
+                            sellPrice: JSON.parse(data3.toString()).a,
+                            decimals: 8
+                        }]
+                    };
+                    // streamBTCUSDT.removeAllListeners();
+                    // streamETHUSDT.removeAllListeners();
+                    // streamSOLUSDT.removeAllListeners();
+                    await publisher.publish('stream',JSON.stringify(obj));
+                    
+                })
+            })
+    }
+)}};
+
+await sendDataPubSubRedisWebSocketInsidePublish();
