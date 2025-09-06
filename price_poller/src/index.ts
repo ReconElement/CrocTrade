@@ -720,81 +720,14 @@ const streamETHUSDT = new WebSocket("wss://stream.binance.com:9443/ws/ethusdt@bo
 const streamSOLUSDT = new WebSocket("wss://stream.binance.com:9443/ws/solusdt@bookTicker");
 const universal = new WebSocket("wss://stream.binance.com:9443/stream?streams=btcusdt@bookTicker/ethusdt@bookTicker/solusdt@bookTicker");
 function getDataWS(ws: WebSocket){
+    // let r = Math.random(); 
     return new Promise(function(resolve){
         ws.on('message',(data)=>{
+            // console.log("hi there " + r);
             resolve(JSON.parse(data.toString()));
         });
     })
 };
-
-// type streamObj = {
-//     u: number,
-//     s: string,
-//     b: string,
-//     B: string,
-//     a: string,
-//     A: string
-// }
-// const sendDataPubSubRedis = async ()=>{
-//     const publisher = Redis.createClient();
-//     const connection = await publisher.connect();
-//     const data = {price_updates: [{
-
-//     }]};
-//     if(connection){
-//         getDataWS(streamBTCUSDT).then((stream)=>{
-//             data.price_updates.push({
-//                 symbol: "BTC",
-//                 //@ts-ignore
-//                 buyPrice: stream?.b,
-//                 //@ts-ignore
-//                 sellPrice: stream?.a,
-//                 decimals: 8
-//             })
-//         });
-//         getDataWS(streamETHUSDT).then((stream)=>{
-//             data.price_updates.push({
-//                 symbol: "ETH",
-//                 //@ts-ignore
-//                 buyPrice: stream?.b,
-//                 //@ts-ignore
-//                 sellPrice: stream?.a,
-//                 decimals: 8
-//             })
-//         });
-//         getDataWS(streamSOLUSDT).then((stream)=>{
-//             data.price_updates.push({
-//                 symbol: "SOL",
-//                 //@ts-ignore
-//                 buyPrice: stream?.b,
-//                 //@ts-ignore
-//                 sellPrice: stream?.a,
-//                 decimals: 8
-//             });
-//         });
-//         await publisher.publish("stream",JSON.stringify(data));
-//     }
-// };
-
-// await sendDataPubSubRedis();
-// type streamObj = {
-//     price_updates: [{
-//         symbol: string,
-//         buyPrice: number,
-//         sellPrice: number,
-//         decimals: string
-//     },{
-//         symbol: string,
-//         buyPrice: number,
-//         sellPrice: number,
-//         decimals: string
-//     },{
-//         symbol: string,
-//         buyPrice: number,
-//         sellPrice: number,
-//         decimals: number
-//     }];
-// }
 const publisher = Redis.createClient();
 const connection = await publisher.connect();
 const sendDataPubSubRedis = async ()=>{
@@ -852,5 +785,48 @@ const sendDataPubSubRedis = async ()=>{
 //     console.log(data.toString());
 // });
 
-do{await sendDataPubSubRedis()}
-while(connection);
+// 
+// do(await sendDataPubSubRedis)
+//  while (connection);
+// do(await sendDataPubSubRedis())
+// while(connection);
+
+const sendDataWS = async ()=>{
+    streamBTCUSDT.on('message',async (data1)=>{
+        streamETHUSDT.on('message', async(data2)=>{
+            streamSOLUSDT.on('message', async (data3)=>{
+                 const obj = {
+                        price_updates: [{
+                            symbol: "BTC",
+                            buyPrice: JSON.parse(data1.toString()).b,
+                            sellPrice: JSON.parse(data1.toString()).a,
+                            decimals: 8
+                        },{
+                            symbol: "SOL",
+                            buyPrice: JSON.parse(data3.toString()).b,
+                            sellPrice: JSON.parse(data3.toString()).a,
+                            decimals: 8
+                        },{
+                            symbol: "ETH",
+                            buyPrice: JSON.parse(data2.toString()).b,
+                            sellPrice: JSON.parse(data2.toString()).a,
+                            decimals: 8
+                        }]
+                    };
+                    await publisher.publish("stream",JSON.stringify(obj));
+            })
+        })
+    })
+};
+
+// await sendDataWS();
+
+const sendCombinedDataWS = async ()=>{
+    if(connection){
+        universal.on('message',async (data)=>{
+            await publisher.publish("stream", data.toString());
+        })
+    }
+};
+
+await sendCombinedDataWS();
